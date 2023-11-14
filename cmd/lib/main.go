@@ -21,7 +21,7 @@ func CreateWSFEService(certsPath string, cuit int64) bool {
 	crt := certsPath + "/" + "cert.crt"
 	key := certsPath + "/" + "cert.key"
 
-	wsafipService = wsafip.NewService(wsafip.PRODUCTION, crt, key)
+	wsafipService = wsafip.NewService(wsafip.TESTING, crt, key)
 	var err error
 	token, sign, _, err := wsafipService.GetLoginTicket("wsfe")
 	if err != nil {
@@ -29,7 +29,7 @@ func CreateWSFEService(certsPath string, cuit int64) bool {
 		return false
 	}
 
-	wsfeService = wsfe.NewService(wsfe.PRODUCTION, token, sign)
+	wsfeService = wsfe.NewService(wsfe.TESTING, token, sign)
 	return true
 }
 
