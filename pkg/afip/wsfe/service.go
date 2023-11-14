@@ -141,12 +141,21 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 		FchVtoPago:   "",
 		FchServDesde: "",
 		FchServHasta: "",
-		Iva:          &arrayOfAlicIvas,
+	}
+
+	if caeRequest.ImpIVA > 0 || caeRequest.ImpNeto > 0 {
+		feDetRequest.Iva = &arrayOfAlicIvas
 	}
 
 	if caeRequest.CbteNroRef > 0 && caeRequest.CbteTipoRef > 0 {
 		cbtesAsoc := make([]*CbteAsoc, 0)
-		cuit := strconv.FormatInt(caeRequest.DocNro, 10)
+		cuit := ""
+		if caeRequest.DocNro > 0 {
+			docStr := strconv.FormatInt(caeRequest.DocNro, 10)
+			if len(docStr) == 11 {
+				cuit = docStr
+			}
+		}
 		cbteAsoc := CbteAsoc{
 			Tipo:    caeRequest.CbteTipoRef,
 			PtoVta:  cabRequest.PtoVta,

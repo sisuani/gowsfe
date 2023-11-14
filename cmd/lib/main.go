@@ -80,3 +80,35 @@ func CaeRequest(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
 func LastError() *C.char {
 	return C.CString(lastError)
 }
+
+func main() {
+	ret := CreateWSFEService("certs", 20285142084)
+	if !ret {
+		log.Println(lastError)
+		return
+	}
+
+	request := C.CString(`{"cbteTipo":1,"cuit":20285142084,"pos":6}`)
+	nroUltimoComp := GetUltimoComp(request)
+	log.Println(nroUltimoComp)
+
+	/*
+		pos := int32(6)
+
+		nroUltimoComp := GetUltimoComp(20285142084, pos, CBTE_TIPO_CN_A)
+		log.Println(nroUltimoComp)
+
+		for i := 1; i < 100; i++ {
+			nroUltimoComp := GetUltimoComp(20285142084, pos, CBTE_TIPO_CN_A)
+			today := time.Now().Format("20060102")
+
+			ivasMap := make(map[string]float64)
+			ivasMap["210"] = 0.21
+			cae, caeFchVto := CaeRequest(20285142084, pos, CBTE_TIPO_CN_A, 80, 20277342562, nroUltimoComp+1, nroUltimoComp+1, today, 2.21, 0, 1, 0, 1, 0.21, ivasMap, CBTE_TIPO_INV_A, 36)
+
+			log.Println(nroUltimoComp, cae, caeFchVto, lastError)
+
+			time.Sleep(time.Minute * 60)
+		}
+	*/
+}
