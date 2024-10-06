@@ -1,4 +1,4 @@
-package certs
+import "github.com/sisuani/gowsfe/pkg/certs"
 
 import (
 	"crypto/rsa"
