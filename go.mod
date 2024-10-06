@@ -1,4 +1,4 @@
-module gowsfe
+module github.com/sisuani/gowsfe
 
 go 1.16
 
