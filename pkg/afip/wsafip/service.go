@@ -6,7 +6,7 @@ import (
 	"fmt"
 	"time"
 
-	"gowsfe/pkg/certs"
+	"github.com/sisuani/gowsfe/pkg/certs"
 
 	"github.com/hooklift/gowsdl/soap"
 )
