@@ -39,6 +39,8 @@ type CaeRequest struct {
 	} `json:"tributosArray"`
 	CbteTipoRef int32 `json:"cbteTipoRef"`
 	CbteNroRef  int64 `json:"cbteNroRef"`
+	CanMisMonExt string `json:"canMisMonExt"`
+	CondicionIVAReceptorId int32 `json:"condicionIVAReceptorId"`
 }
 
 const URLWSAATesting string = "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl"
@@ -124,23 +126,25 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 
 	//body request
 	feDetRequest := FEDetRequest{
-		Concepto:     1,
-		DocTipo:      caeRequest.DocTipo,
-		DocNro:       caeRequest.DocNro,
-		CbteDesde:    caeRequest.CbteDesde,
-		CbteHasta:    caeRequest.CbteHasta,
-		CbteFch:      caeRequest.CbteFch,
-		ImpTotal:     caeRequest.ImpTotal,
-		ImpTotConc:   caeRequest.ImpTotConc,
-		ImpNeto:      caeRequest.ImpNeto,
-		ImpOpEx:      caeRequest.ImpOpEx,
-		ImpTrib:      caeRequest.ImpTrib,
-		ImpIVA:       caeRequest.ImpIVA,
-		MonId:        "PES",
-		MonCotiz:     1,
-		FchVtoPago:   "",
-		FchServDesde: "",
-		FchServHasta: "",
+		Concepto:               1,
+		DocTipo:                caeRequest.DocTipo,
+		DocNro:                 caeRequest.DocNro,
+		CbteDesde:              caeRequest.CbteDesde,
+		CbteHasta:              caeRequest.CbteHasta,
+		CbteFch:                caeRequest.CbteFch,
+		ImpTotal:               caeRequest.ImpTotal,
+		ImpTotConc:             caeRequest.ImpTotConc,
+		ImpNeto:                caeRequest.ImpNeto,
+		ImpOpEx:                caeRequest.ImpOpEx,
+		ImpTrib:                caeRequest.ImpTrib,
+		ImpIVA:                 caeRequest.ImpIVA,
+		MonId:                  "PES",
+		CanMisMonExt:           "N",  // Si informa MonId = PES, el campo CanMisMonExt no debe informarse.
+		CondicionIVAReceptorId: caeRequest.CondicionIVAReceptorId,
+		MonCotiz:               1,
+		FchVtoPago:             "",
+		FchServDesde:           "",
+		FchServHasta:           "",
 	}
 
 	if caeRequest.ImpIVA > 0 {

@@ -8,8 +8,8 @@ import (
 	//"strconv"
 	//"time"
 
-	"gowsfe/pkg/afip/wsafip"
-	"gowsfe/pkg/afip/wsfe"
+	"github.com/sisuani/gowsfe/pkg/afip/wsafip"
+	"github.com/sisuani/gowsfe/pkg/afip/wsfe"
 )
 
 var lastError string
