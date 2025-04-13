@@ -53,9 +53,23 @@ func LoadX509KeyPair(certFile, keyFile string) (*x509.Certificate, *rsa.PrivateK
 		return nil, nil, fmt.Errorf("LoadX509KeyPair: could not parse crt data: %s", err)
 	}
 
-	key, err := x509.ParsePKCS1PrivateKey(keyDecode.Bytes)
-	if err != nil {
-		return nil, nil, fmt.Errorf("LoadX509KeyPair: could not parse key data: %s", err)
-	}
-	return crt, key, nil
+    var key *rsa.PrivateKey
+
+    // Try PKCS#1 (old format)
+    key, err = x509.ParsePKCS1PrivateKey(keyDecode.Bytes)
+    if err == nil {
+        return crt, key, nil
+    }
+
+    // Try PKCS#8 (new format)
+    parsedKey, err := x509.ParsePKCS8PrivateKey(keyDecode.Bytes)
+    if err == nil {
+        if rsaKey, ok := parsedKey.(*rsa.PrivateKey); ok {
+            return crt, rsaKey, nil
+        }
+        return nil, nil, fmt.Errorf("LoadX509KeyPair: key is not RSA")
+    }
+
+    // Si falla todo, devolver error
+    return nil, nil, fmt.Errorf("LoadX509KeyPair: unsupported key format: %s", err)
 }
