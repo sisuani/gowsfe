@@ -13,6 +13,14 @@ import (
 var _ time.Time
 var _ xml.Name
 
+type AnyType struct {
+	InnerXML string `xml:",innerxml"`
+}
+
+type AnyURI string
+
+type NCName string
+
 type FECAESolicitar struct {
 	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FECAESolicitar"`
 
@@ -163,6 +171,8 @@ type FEParamGetCotizacion struct {
 	Auth *FEAuthRequest `xml:"Auth,omitempty" json:"Auth,omitempty"`
 
 	MonId string `xml:"MonId,omitempty" json:"MonId,omitempty"`
+
+	FchCotiz string `xml:"FchCotiz,omitempty" json:"FchCotiz,omitempty"`
 }
 
 type FEParamGetCotizacionResponse struct {
@@ -255,6 +265,20 @@ type FEParamGetTiposCbteResponse struct {
 	FEParamGetTiposCbteResult *CbteTipoResponse `xml:"FEParamGetTiposCbteResult,omitempty" json:"FEParamGetTiposCbteResult,omitempty"`
 }
 
+type FEParamGetCondicionIvaReceptor struct {
+	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetCondicionIvaReceptor"`
+
+	Auth *FEAuthRequest `xml:"Auth,omitempty" json:"Auth,omitempty"`
+
+	ClaseCmp string `xml:"ClaseCmp,omitempty" json:"ClaseCmp,omitempty"`
+}
+
+type FEParamGetCondicionIvaReceptorResponse struct {
+	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetCondicionIvaReceptorResponse"`
+
+	FEParamGetCondicionIvaReceptorResult *CondicionIvaReceptorResponse `xml:"FEParamGetCondicionIvaReceptorResult,omitempty" json:"FEParamGetCondicionIvaReceptorResult,omitempty"`
+}
+
 type FEParamGetTiposDoc struct {
 	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetTiposDoc"`
 
@@ -277,6 +301,18 @@ type FEParamGetTiposPaisesResponse struct {
 	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetTiposPaisesResponse"`
 
 	FEParamGetTiposPaisesResult *FEPaisResponse `xml:"FEParamGetTiposPaisesResult,omitempty" json:"FEParamGetTiposPaisesResult,omitempty"`
+}
+
+type FEParamGetActividades struct {
+	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetActividades"`
+
+	Auth *FEAuthRequest `xml:"Auth,omitempty" json:"Auth,omitempty"`
+}
+
+type FEParamGetActividadesResponse struct {
+	XMLName xml.Name `xml:"http://ar.gov.afip.dif.FEV1/ FEParamGetActividadesResponse"`
+
+	FEParamGetActividadesResult *FEActividadesResponse `xml:"FEParamGetActividadesResult,omitempty" json:"FEParamGetActividadesResult,omitempty"`
 }
 
 type FEAuthRequest struct {
@@ -348,6 +384,10 @@ type FEDetRequest struct {
 
 	MonCotiz float64 `xml:"MonCotiz,omitempty" json:"MonCotiz,omitempty"`
 
+	CanMisMonExt string `xml:"CanMisMonExt,omitempty" json:"CanMisMonExt,omitempty"`
+
+	CondicionIVAReceptorId int32 `xml:"CondicionIVAReceptorId,omitempty" json:"CondicionIVAReceptorId,omitempty"`
+
 	CbtesAsoc *ArrayOfCbteAsoc `xml:"CbtesAsoc,omitempty" json:"CbtesAsoc,omitempty"`
 
 	Tributos *ArrayOfTributo `xml:"Tributos,omitempty" json:"Tributos,omitempty"`
@@ -359,6 +399,8 @@ type FEDetRequest struct {
 	Compradores *ArrayOfComprador `xml:"Compradores,omitempty" json:"Compradores,omitempty"`
 
 	PeriodoAsoc *Periodo `xml:"PeriodoAsoc,omitempty" json:"PeriodoAsoc,omitempty"`
+
+	Actividades *ArrayOfActividad `xml:"Actividades,omitempty" json:"Actividades,omitempty"`
 }
 
 type ArrayOfCbteAsoc struct {
@@ -431,6 +473,14 @@ type Periodo struct {
 	FchDesde string `xml:"FchDesde,omitempty" json:"FchDesde,omitempty"`
 
 	FchHasta string `xml:"FchHasta,omitempty" json:"FchHasta,omitempty"`
+}
+
+type ArrayOfActividad struct {
+	Actividad []*Actividad `xml:"Actividad,omitempty" json:"Actividad,omitempty"`
+}
+
+type Actividad struct {
+	Id int64 `xml:"Id,omitempty" json:"Id,omitempty"`
 }
 
 type FECAEResponse struct {
@@ -859,6 +909,26 @@ type CbteTipo struct {
 	FchHasta string `xml:"FchHasta,omitempty" json:"FchHasta,omitempty"`
 }
 
+type CondicionIvaReceptorResponse struct {
+	ResultGet *ArrayOfCondicionIvaReceptor `xml:"ResultGet,omitempty" json:"ResultGet,omitempty"`
+
+	Errors *ArrayOfErr `xml:"Errors,omitempty" json:"Errors,omitempty"`
+
+	Events *ArrayOfEvt `xml:"Events,omitempty" json:"Events,omitempty"`
+}
+
+type ArrayOfCondicionIvaReceptor struct {
+	CondicionIvaReceptor []*CondicionIvaReceptor `xml:"CondicionIvaReceptor,omitempty" json:"CondicionIvaReceptor,omitempty"`
+}
+
+type CondicionIvaReceptor struct {
+	Id int32 `xml:"Id,omitempty" json:"Id,omitempty"`
+
+	Desc string `xml:"Desc,omitempty" json:"Desc,omitempty"`
+
+	Cmp_Clase string `xml:"Cmp_Clase,omitempty" json:"Cmp_Clase,omitempty"`
+}
+
 type DocTipoResponse struct {
 	ResultGet *ArrayOfDocTipo `xml:"ResultGet,omitempty" json:"ResultGet,omitempty"`
 
@@ -895,6 +965,26 @@ type ArrayOfPaisTipo struct {
 
 type PaisTipo struct {
 	Id int16 `xml:"Id,omitempty" json:"Id,omitempty"`
+
+	Desc string `xml:"Desc,omitempty" json:"Desc,omitempty"`
+}
+
+type FEActividadesResponse struct {
+	ResultGet *ArrayOfActividadesTipo `xml:"ResultGet,omitempty" json:"ResultGet,omitempty"`
+
+	Errors *ArrayOfErr `xml:"Errors,omitempty" json:"Errors,omitempty"`
+
+	Events *ArrayOfEvt `xml:"Events,omitempty" json:"Events,omitempty"`
+}
+
+type ArrayOfActividadesTipo struct {
+	ActividadesTipo []*ActividadesTipo `xml:"ActividadesTipo,omitempty" json:"ActividadesTipo,omitempty"`
+}
+
+type ActividadesTipo struct {
+	Id int64 `xml:"Id,omitempty" json:"Id,omitempty"`
+
+	Orden int16 `xml:"Orden,omitempty" json:"Orden,omitempty"`
 
 	Desc string `xml:"Desc,omitempty" json:"Desc,omitempty"`
 }
@@ -991,6 +1081,11 @@ type ServiceSoap interface {
 
 	FEParamGetTiposCbteContext(ctx context.Context, request *FEParamGetTiposCbte) (*FEParamGetTiposCbteResponse, error)
 
+	/* Recupera la condicion frente al IVA del receptor (para una clase de comprobante determinada o para todos si no se especifica). */
+	FEParamGetCondicionIvaReceptor(request *FEParamGetCondicionIvaReceptor) (*FEParamGetCondicionIvaReceptorResponse, error)
+
+	FEParamGetCondicionIvaReceptorContext(ctx context.Context, request *FEParamGetCondicionIvaReceptor) (*FEParamGetCondicionIvaReceptorResponse, error)
+
 	/* Recupera el listado  de Tipos de Documentos utilizables en servicio de autorización. */
 	FEParamGetTiposDoc(request *FEParamGetTiposDoc) (*FEParamGetTiposDocResponse, error)
 
@@ -1000,6 +1095,11 @@ type ServiceSoap interface {
 	FEParamGetTiposPaises(request *FEParamGetTiposPaises) (*FEParamGetTiposPaisesResponse, error)
 
 	FEParamGetTiposPaisesContext(ctx context.Context, request *FEParamGetTiposPaises) (*FEParamGetTiposPaisesResponse, error)
+
+	/* Recupera el listado de las diferentes actividades habilitadas para el emisor */
+	FEParamGetActividades(request *FEParamGetActividades) (*FEParamGetActividadesResponse, error)
+
+	FEParamGetActividadesContext(ctx context.Context, request *FEParamGetActividades) (*FEParamGetActividadesResponse, error)
 }
 
 type serviceSoap struct {
@@ -1318,6 +1418,23 @@ func (service *serviceSoap) FEParamGetTiposCbte(request *FEParamGetTiposCbte) (*
 	)
 }
 
+func (service *serviceSoap) FEParamGetCondicionIvaReceptorContext(ctx context.Context, request *FEParamGetCondicionIvaReceptor) (*FEParamGetCondicionIvaReceptorResponse, error) {
+	response := new(FEParamGetCondicionIvaReceptorResponse)
+	err := service.client.CallContext(ctx, "http://ar.gov.afip.dif.FEV1/FEParamGetCondicionIvaReceptor", request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (service *serviceSoap) FEParamGetCondicionIvaReceptor(request *FEParamGetCondicionIvaReceptor) (*FEParamGetCondicionIvaReceptorResponse, error) {
+	return service.FEParamGetCondicionIvaReceptorContext(
+		context.Background(),
+		request,
+	)
+}
+
 func (service *serviceSoap) FEParamGetTiposDocContext(ctx context.Context, request *FEParamGetTiposDoc) (*FEParamGetTiposDocResponse, error) {
 	response := new(FEParamGetTiposDocResponse)
 	err := service.client.CallContext(ctx, "http://ar.gov.afip.dif.FEV1/FEParamGetTiposDoc", request, response)
@@ -1347,6 +1464,23 @@ func (service *serviceSoap) FEParamGetTiposPaisesContext(ctx context.Context, re
 
 func (service *serviceSoap) FEParamGetTiposPaises(request *FEParamGetTiposPaises) (*FEParamGetTiposPaisesResponse, error) {
 	return service.FEParamGetTiposPaisesContext(
+		context.Background(),
+		request,
+	)
+}
+
+func (service *serviceSoap) FEParamGetActividadesContext(ctx context.Context, request *FEParamGetActividades) (*FEParamGetActividadesResponse, error) {
+	response := new(FEParamGetActividadesResponse)
+	err := service.client.CallContext(ctx, "http://ar.gov.afip.dif.FEV1/FEParamGetActividades", request, response)
+	if err != nil {
+		return nil, err
+	}
+
+	return response, nil
+}
+
+func (service *serviceSoap) FEParamGetActividades(request *FEParamGetActividades) (*FEParamGetActividadesResponse, error) {
+	return service.FEParamGetActividadesContext(
 		context.Background(),
 		request,
 	)
