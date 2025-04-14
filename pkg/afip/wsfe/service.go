@@ -7,6 +7,15 @@ import (
 	"github.com/hooklift/gowsdl/soap"
 )
 
+const (
+	FacturaA     = 1
+	NotaCreditoA = 3 
+	FacturaB     = 6
+	NotaCreditoB = 8
+	FacturaC     = 11
+	NotaCreditoC = 13
+)
+
 type CabRequest struct {
 	Cuit     int64 `json:"cuit"`
 	PtoVta   int32 `json:"ptoVta"`
@@ -143,7 +152,7 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 		FchServHasta: "",
 	}
 
-	if cabRequest.CbteTipo != 11 &&
+	if cabRequest.CbteTipo != FacturaC &&
 		(caeRequest.ImpIVA > 0 || caeRequest.ImpNeto > 0) {
 		feDetRequest.Iva = &arrayOfAlicIvas
 	}
