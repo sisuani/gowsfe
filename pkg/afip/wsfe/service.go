@@ -156,7 +156,7 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 		FchServHasta:           "",
 	}
 
-	if cabRequest.CbteTipo != FacturaC &&
+	if cabRequest.CbteTipo != FacturaC && cabRequest.CbteTipo != NotaCreditoC &&
 		(caeRequest.ImpIVA > 0 || caeRequest.ImpNeto > 0) {
 		feDetRequest.Iva = &arrayOfAlicIvas
 	}
