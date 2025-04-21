@@ -2,6 +2,7 @@ package wsfe
 
 import (
 	"fmt"
+	"math"
 	"strconv"
 
 	"github.com/hooklift/gowsdl/soap"
@@ -72,6 +73,12 @@ type Service struct {
 	sign        string
 }
 
+func BankersRounding(f float64) float64 {
+    str := fmt.Sprintf("%.3f", f)
+    f, _ = strconv.ParseFloat(str, 64)
+    return math.Round(f*100) / 100
+}
+
 func NewService(environment Environment, token, sign string) *Service {
 	var url string
 	if environment == PRODUCTION {
@@ -123,8 +130,8 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 	for _, iva := range caeRequest.IvasArray {
 		alicIva := AlicIva{
 			Id:      iva.ID,
-			BaseImp: iva.BaseImp,
-			Importe: iva.Importe,
+			BaseImp: BankersRounding(iva.BaseImp),
+			Importe: BankersRounding(iva.Importe),
 		}
 		ivas = append(ivas, &alicIva)
 	}
@@ -141,12 +148,12 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 		CbteDesde:              caeRequest.CbteDesde,
 		CbteHasta:              caeRequest.CbteHasta,
 		CbteFch:                caeRequest.CbteFch,
-		ImpTotal:               caeRequest.ImpTotal,
-		ImpTotConc:             caeRequest.ImpTotConc,
-		ImpNeto:                caeRequest.ImpNeto,
-		ImpOpEx:                caeRequest.ImpOpEx,
-		ImpTrib:                caeRequest.ImpTrib,
-		ImpIVA:                 caeRequest.ImpIVA,
+		ImpTotal:               BankersRounding(caeRequest.ImpTotal),
+		ImpTotConc:             BankersRounding(caeRequest.ImpTotConc),
+		ImpNeto:                BankersRounding(caeRequest.ImpNeto),
+		ImpOpEx:                BankersRounding(caeRequest.ImpOpEx),
+		ImpTrib:                BankersRounding(caeRequest.ImpTrib),
+		ImpIVA:                 BankersRounding(caeRequest.ImpIVA),
 		MonId:                  "PES",
 		CanMisMonExt:           "N",  // Si informa MonId = PES, el campo CanMisMonExt no debe informarse.
 		CondicionIVAReceptorId: caeRequest.CondicionIVAReceptorId,
@@ -188,10 +195,10 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 	for _, tributo := range caeRequest.TributosArray {
 		tributo := Tributo{
 			Id:      tributo.ID,
-			BaseImp: tributo.BaseImp,
+			BaseImp: BankersRounding(tributo.BaseImp),
 			Desc:    tributo.Desc,
 			Alic:    tributo.Alic,
-			Importe: tributo.Importe,
+			Importe: BankersRounding(tributo.Importe),
 		}
 		tributos = append(tributos, &tributo)
 	}
