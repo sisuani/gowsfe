@@ -5,8 +5,10 @@ import "C"
 import (
 	"encoding/json"
 	"log"
+
 	//"strconv"
 	//"time"
+	"github.com/hooklift/gowsdl/soap"
 
 	"github.com/sisuani/gowsfe/pkg/afip/wsafip"
 	"github.com/sisuani/gowsfe/pkg/afip/wsfe"
@@ -79,6 +81,26 @@ func CaeRequest(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
 //export LastError
 func LastError() *C.char {
 	return C.CString(lastError)
+}
+
+//export FeDummy
+func FeDummy() (*C.char, *C.char, *C.char) {
+	// hardcode production
+	client := soap.NewClient("https://servicios1.afip.gov.ar/wsfev1/service.asmx")
+	service := wsfe.NewServiceSoap(client)
+	lastError = ""
+
+	response, err := service.FEDummy(&wsfe.FEDummy{})
+	if err != nil {
+		lastError = err.Error()
+		return C.CString(""), C.CString(""), C.CString("")
+	}
+
+	appServer := response.FEDummyResult.AppServer
+	dbServer := response.FEDummyResult.DbServer
+	authServer := response.FEDummyResult.AuthServer
+
+	return C.CString(appServer), C.CString(dbServer), C.CString(authServer)
 }
 
 func main() {
