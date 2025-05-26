@@ -10,7 +10,7 @@ import (
 
 const (
 	FacturaA     = 1
-	NotaCreditoA = 3 
+	NotaCreditoA = 3
 	FacturaB     = 6
 	NotaCreditoB = 8
 	FacturaC     = 11
@@ -47,10 +47,10 @@ type CaeRequest struct {
 		Alic    float64 `json:"Alic"`
 		Importe float64 `json:"importe"`
 	} `json:"tributosArray"`
-	CbteTipoRef int32 `json:"cbteTipoRef"`
-	CbteNroRef  int64 `json:"cbteNroRef"`
-	CanMisMonExt string `json:"canMisMonExt"`
-	CondicionIVAReceptorId int32 `json:"condicionIVAReceptorId"`
+	CbteTipoRef            int32  `json:"cbteTipoRef"`
+	CbteNroRef             int64  `json:"cbteNroRef"`
+	CanMisMonExt           string `json:"canMisMonExt"`
+	CondicionIVAReceptorId int32  `json:"condicionIVAReceptorId"`
 }
 
 const URLWSAATesting string = "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl"
@@ -74,9 +74,9 @@ type Service struct {
 }
 
 func BankersRounding(f float64) float64 {
-    str := fmt.Sprintf("%.3f", f)
-    f, _ = strconv.ParseFloat(str, 64)
-    return math.Round(f*100) / 100
+	str := fmt.Sprintf("%.3f", f)
+	f, _ = strconv.ParseFloat(str, 64)
+	return math.Round(f*100) / 100
 }
 
 func NewService(environment Environment, token, sign string) *Service {
@@ -155,7 +155,7 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 		ImpTrib:                BankersRounding(caeRequest.ImpTrib),
 		ImpIVA:                 BankersRounding(caeRequest.ImpIVA),
 		MonId:                  "PES",
-		CanMisMonExt:           "N",  // Si informa MonId = PES, el campo CanMisMonExt no debe informarse.
+		CanMisMonExt:           "N", // Si informa MonId = PES, el campo CanMisMonExt no debe informarse.
 		CondicionIVAReceptorId: caeRequest.CondicionIVAReceptorId,
 		MonCotiz:               1,
 		FchVtoPago:             "",
@@ -249,4 +249,18 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 	}
 
 	return cae, caeFchVto, nil
+}
+
+func (s *Service) FeDummy() (string, string, string, error) {
+	dummyRequest := FEDummy{}
+	dummyResponse, err := s.serviceSoap.FEDummy(&dummyRequest)
+
+	if err != nil {
+		return "", "", "", fmt.Errorf("error al llamar al servicio dummy: %v", err)
+	}
+
+	return dummyResponse.FEDummyResult.AppServer,
+		dummyResponse.FEDummyResult.DbServer,
+		dummyResponse.FEDummyResult.AuthServer,
+		nil
 }
