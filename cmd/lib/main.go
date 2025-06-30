@@ -5,6 +5,7 @@ import "C"
 import (
 	"encoding/json"
 	"log"
+
 	//"strconv"
 	//"time"
 
@@ -42,7 +43,7 @@ func GetUltimoComp(requestStrCchar *C.char) int64 {
 	cbteNro, err := wsfeService.GetUltimoComp(&cabRequest)
 	if err != nil {
 		lastError = err.Error()
-		return 0
+		return -1
 	}
 	return int64(cbteNro)
 }
