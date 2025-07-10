@@ -4,10 +4,10 @@ import "C"
 
 import (
 	"encoding/json"
+	"fmt"
 	"log"
-
-	//"strconv"
-	//"time"
+	"os"
+	"time"
 
 	"github.com/sisuani/gowsfe/pkg/afip/wsafip"
 	"github.com/sisuani/gowsfe/pkg/afip/wsfe"
@@ -17,12 +17,32 @@ var lastError string
 var wsafipService *wsafip.Service
 var wsfeService *wsfe.Service
 
+func writeToLog(message string) error {
+	file, err := os.OpenFile("gowsfe.log", os.O_APPEND|os.O_CREATE|os.O_WRONLY, 0644)
+	if err != nil {
+		return fmt.Errorf("error al abrir/crear el archivo: %v", err)
+	}
+	defer file.Close()
+
+	logEntry := fmt.Sprintf("[%s] %s\r\n", time.Now().Format("2006-01-02 15:04:05"), message)
+
+	if _, err := file.WriteString(logEntry); err != nil {
+		return fmt.Errorf("error al escribir en el archivo: %v", err)
+	}
+
+	return nil
+}
+
 //export CreateWSFEService
 func CreateWSFEService(certsPath string, cuit int64) bool {
 	crt := certsPath + "/" + "cert.crt"
 	key := certsPath + "/" + "cert.key"
 
-	wsafipService = wsafip.NewService(wsafip.TESTING, crt, key)
+	writeToLog("CreateWSFEService()")
+	writeToLog(fmt.Sprintf("  |_ crt: %s", crt))
+	writeToLog(fmt.Sprintf("  |_ key: %s", key))
+
+	wsafipService = wsafip.NewService(wsafip.PRODUCTION, crt, key)
 	var err error
 	token, sign, _, err := wsafipService.GetLoginTicket("wsfe")
 	if err != nil {
@@ -30,7 +50,7 @@ func CreateWSFEService(certsPath string, cuit int64) bool {
 		return false
 	}
 
-	wsfeService = wsfe.NewService(wsfe.TESTING, token, sign)
+	wsfeService = wsfe.NewService(wsfe.PRODUCTION, token, sign)
 	return true
 }
 
@@ -38,13 +58,19 @@ func CreateWSFEService(certsPath string, cuit int64) bool {
 func GetUltimoComp(requestStrCchar *C.char) int64 {
 	lastError = ""
 	requestStr := C.GoString(requestStrCchar)
+
+	writeToLog("GetUltimoComp()")
+	writeToLog(fmt.Sprintf("  |_ Request: %s", requestStr))
+
 	cabRequest := wsfe.CabRequest{}
 	err := json.Unmarshal([]byte(requestStr), &cabRequest)
 	cbteNro, err := wsfeService.GetUltimoComp(&cabRequest)
+	writeToLog(fmt.Sprintf("  |_ Ultimo Comprobante (AFIP): %d", cbteNro))
 	if err != nil {
 		lastError = err.Error()
-		return -1
+		cbteNro = -1
 	}
+	writeToLog(fmt.Sprintf("  |_ Ultimo Comprobante: %d", cbteNro))
 	return int64(cbteNro)
 }
 
@@ -53,8 +79,10 @@ func CaeRequest(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
 	lastError = ""
 	cabRequestStr := C.GoString(cabRequestCchar)
 	detRequestStr := C.GoString(detRequestCchar)
-	log.Println("CAB: ", cabRequestStr)
-	log.Println("DET: ", detRequestStr)
+
+	writeToLog("CaeRequest()")
+	writeToLog(fmt.Sprintf("  |_ CAB: %s", cabRequestStr))
+	writeToLog(fmt.Sprintf("  |_ DET: %s", detRequestStr))
 
 	cabRequest := wsfe.CabRequest{}
 	err := json.Unmarshal([]byte(cabRequestStr), &cabRequest)
@@ -67,13 +95,18 @@ func CaeRequest(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
 	err = json.Unmarshal([]byte(detRequestStr), &caeRequest)
 	if err != nil {
 		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ error: %s", lastError))
 		return C.CString(""), C.CString("")
 	}
 
 	cae, caeFchVto, err := wsfeService.CaeRequest(&cabRequest, &caeRequest)
 	if err != nil {
 		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ error: %s", lastError))
 	}
+
+	writeToLog(fmt.Sprintf("  |_ cae: %s", cae))
+	writeToLog(fmt.Sprintf("  |_ vto: %s", caeFchVto))
 	return C.CString(cae), C.CString(caeFchVto)
 }
 
