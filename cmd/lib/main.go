@@ -3,7 +3,9 @@ package main
 import "C"
 
 import (
+	"crypto/x509"
 	"encoding/json"
+	"encoding/pem"
 	"fmt"
 	"log"
 	"os"
@@ -31,6 +33,43 @@ func writeToLog(message string) error {
 	}
 
 	return nil
+}
+
+//export GetCertExpiryDays
+func GetCertExpiryDays(certsPath string) int64 {
+	crtPath := certsPath + "/cert.crt"
+
+	writeToLog("GetCertExpiryDays()")
+
+	certData, err := os.ReadFile(crtPath)
+	if err != nil {
+		writeToLog(fmt.Sprintf("  |_ Error al leer el certificado: %v", err))
+		return -1
+	}
+
+	block, _ := pem.Decode(certData)
+	if block == nil {
+		writeToLog("  |_ No se pudo decodificar el certificado PEM")
+		return -1
+	}
+
+	cert, err := x509.ParseCertificate(block.Bytes)
+	if err != nil {
+		writeToLog(fmt.Sprintf("  |_ Error al parsear el certificado: %v", err))
+		return -1
+	}
+
+	now := time.Now()
+	expiry := cert.NotAfter
+	daysRemaining := int64(expiry.Sub(now).Hours() / 24)
+
+	if daysRemaining < 0 {
+		writeToLog("  |_ El certificado ya ha expirado")
+		return 0
+	}
+
+	writeToLog(fmt.Sprintf("  |_ Dias para que el certificado expire: %v", daysRemaining))
+	return daysRemaining
 }
 
 //export CreateWSFEService
