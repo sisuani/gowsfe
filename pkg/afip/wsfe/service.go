@@ -111,7 +111,7 @@ func (s *Service) GetUltimoComp(cabRequest *CabRequest) (int32, error) {
 
 	feCompUltimoAutorizadoResponse, err := s.serviceSoap.FECompUltimoAutorizado(&feCompUltimoAutorizado)
 	if err != nil {
-		return 0, err
+		return -1, err
 	}
 
 	return feCompUltimoAutorizadoResponse.FECompUltimoAutorizadoResult.CbteNro, nil
