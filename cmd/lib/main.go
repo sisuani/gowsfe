@@ -102,7 +102,11 @@ func GetUltimoComp(requestStrCchar *C.char) int64 {
 	writeToLog(fmt.Sprintf("  |_ Request: %s", requestStr))
 
 	cabRequest := wsfe.CabRequest{}
-	err := json.Unmarshal([]byte(requestStr), &cabRequest)
+	if err := json.Unmarshal([]byte(requestStr), &cabRequest); err != nil {
+		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ Error al parsear el request: %s", lastError))
+		return -1
+	}
 	cbteNro, err := wsfeService.GetUltimoComp(&cabRequest)
 	writeToLog(fmt.Sprintf("  |_ Ultimo Comprobante (AFIP): %d", cbteNro))
 	if err != nil {
