@@ -1,12 +1,17 @@
 package wsfe
 
 import (
+	"errors"
 	"fmt"
 	"math"
+	"net"
 	"strconv"
+	"time"
 
 	"github.com/hooklift/gowsdl/soap"
 )
+
+const RequestTimeout = 60 * time.Second
 
 const (
 	FacturaA     = 1
@@ -87,7 +92,7 @@ func NewService(environment Environment, token, sign string) *Service {
 		url = URLWSAATesting
 	}
 
-	soapClient := soap.NewClient(url)
+	soapClient := soap.NewClient(url, soap.WithRequestTimeout(RequestTimeout))
 	serviceSoap := NewServiceSoap(soapClient)
 
 	return &Service{environment: environment, serviceSoap: serviceSoap, token: token, sign: sign}
@@ -102,6 +107,14 @@ func (s *Service) getAuth(cuit int64) *FEAuthRequest {
 	return &feAuthRequest
 }
 
+func isTimeoutError(err error) bool {
+	var netErr net.Error
+	if errors.As(err, &netErr) && netErr.Timeout() {
+		return true
+	}
+	return false
+}
+
 func (s *Service) GetUltimoComp(cabRequest *CabRequest) (int32, error) {
 	feCompUltimoAutorizado := FECompUltimoAutorizado{
 		Auth:     s.getAuth(cabRequest.Cuit),
@@ -111,10 +124,18 @@ func (s *Service) GetUltimoComp(cabRequest *CabRequest) (int32, error) {
 
 	feCompUltimoAutorizadoResponse, err := s.serviceSoap.FECompUltimoAutorizado(&feCompUltimoAutorizado)
 	if err != nil {
+		if isTimeoutError(err) {
+			return -1, fmt.Errorf("timeout: el servicio AFIP no respondió en %s", RequestTimeout)
+		}
 		return -1, err
 	}
 
-	return feCompUltimoAutorizadoResponse.FECompUltimoAutorizadoResult.CbteNro, nil
+	result := feCompUltimoAutorizadoResponse.FECompUltimoAutorizadoResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return -1, fmt.Errorf("error AFIP (código %d): %s", result.Errors.Err[0].Code, result.Errors.Err[0].Msg)
+	}
+
+	return result.CbteNro, nil
 }
 
 func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (string, string, error) {
@@ -230,6 +251,9 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 
 	feCAESolicitarResponse, err := s.serviceSoap.FECAESolicitar(&feCaeSolicitar)
 	if err != nil {
+		if isTimeoutError(err) {
+			return "", "", fmt.Errorf("timeout: el servicio AFIP no respondió en %s", RequestTimeout)
+		}
 		return "", "", err
 	}
 
