@@ -58,6 +58,52 @@ type CaeRequest struct {
 	CondicionIVAReceptorId int32 `json:"condicionIVAReceptorId"`
 }
 
+// CaeaRequest es el request para FECAEASolicitar / FECAEAConsultar
+type CaeaRequest struct {
+	Cuit    int64 `json:"cuit"`
+	Periodo int32 `json:"periodo"`
+	Orden   int16 `json:"orden"`
+}
+
+// CaeaRegRequest es el detalle para FECAEARegInformativo (igual que CaeRequest + CAEA y CbteFchHsGen)
+type CaeaRegRequest struct {
+	CAEA          string  `json:"caea"`
+	CbteFchHsGen  string  `json:"cbteFchHsGen"`
+	DocTipo       int32   `json:"docTipo"`
+	DocNro        int64   `json:"docNro"`
+	CbteDesde     int64   `json:"cbteDesde"`
+	CbteHasta     int64   `json:"cbteHasta"`
+	CbteFch       string  `json:"cbteFch"`
+	ImpNeto       float64 `json:"impNeto"`
+	ImpOpEx       float64 `json:"impOpEx"`
+	ImpTotConc    float64 `json:"impTotConc"`
+	ImpTotal      float64 `json:"impTotal"`
+	ImpTrib       float64 `json:"impTrib"`
+	ImpIVA        float64 `json:"impIVA"`
+	IvasArray     []struct {
+		ID      int32   `json:"id"`
+		BaseImp float64 `json:"baseImp"`
+		Importe float64 `json:"importe"`
+	} `json:"ivasArray"`
+	TributosArray []struct {
+		ID      int16   `json:"id"`
+		BaseImp float64 `json:"baseImp"`
+		Desc    string  `json:"desc"`
+		Alic    float64 `json:"Alic"`
+		Importe float64 `json:"importe"`
+	} `json:"tributosArray"`
+	CbteTipoRef            int32  `json:"cbteTipoRef"`
+	CbteNroRef             int64  `json:"cbteNroRef"`
+	CondicionIVAReceptorId int32  `json:"condicionIVAReceptorId"`
+}
+
+// CaeaSinMovRequest es el request para FECAEASinMovimientoInformar / FECAEASinMovimientoConsultar
+type CaeaSinMovRequest struct {
+	Cuit   int64  `json:"cuit"`
+	PtoVta int32  `json:"ptoVta"`
+	CAEA   string `json:"caea"`
+}
+
 const URLWSAATesting string = "https://wswhomo.afip.gov.ar/wsfev1/service.asmx?wsdl"
 const URLWSAAProduction string = "https://servicios1.afip.gov.ar/wsfev1/service.asmx?wsdl"
 
@@ -92,7 +138,7 @@ func NewService(environment Environment, token, sign string) *Service {
 		url = URLWSAATesting
 	}
 
-	soapClient := soap.NewClient(url, soap.WithRequestTimeout(RequestTimeout))
+	soapClient := soap.NewClient(url)
 	serviceSoap := NewServiceSoap(soapClient)
 
 	return &Service{environment: environment, serviceSoap: serviceSoap, token: token, sign: sign}
@@ -274,3 +320,222 @@ func (s *Service) CaeRequest(cabRequest *CabRequest, caeRequest *CaeRequest) (st
 
 	return cae, caeFchVto, nil
 }
+
+// CaeaSolicitar solicita un CAEA para el periodo y orden indicados.
+// Retorna los datos del CAEA obtenido.
+func (s *Service) CaeaSolicitar(req *CaeaRequest) (*FECAEAGet, error) {
+	feCAEASolicitar := FECAEASolicitar{
+		Auth:    s.getAuth(req.Cuit),
+		Periodo: req.Periodo,
+		Orden:   req.Orden,
+	}
+
+	resp, err := s.serviceSoap.FECAEASolicitar(&feCAEASolicitar)
+	if err != nil {
+		return nil, err
+	}
+
+	result := resp.FECAEASolicitarResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return nil, fmt.Errorf(result.Errors.Err[0].Msg)
+	}
+
+	return result.ResultGet, nil
+}
+
+// CaeaConsultar consulta un CAEA ya emitido para el periodo y orden indicados.
+// Retorna los datos del CAEA.
+func (s *Service) CaeaConsultar(req *CaeaRequest) (*FECAEAGet, error) {
+	feCAEAConsultar := FECAEAConsultar{
+		Auth:    s.getAuth(req.Cuit),
+		Periodo: req.Periodo,
+		Orden:   req.Orden,
+	}
+
+	resp, err := s.serviceSoap.FECAEAConsultar(&feCAEAConsultar)
+	if err != nil {
+		return nil, err
+	}
+
+	result := resp.FECAEAConsultarResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return nil, fmt.Errorf(result.Errors.Err[0].Msg)
+	}
+
+	return result.ResultGet, nil
+}
+
+// CaeaRegInformativo informa comprobantes asociados a un CAEA (rendición informativa).
+// Retorna el CAEA y la fecha de vencimiento del comprobante procesado.
+func (s *Service) CaeaRegInformativo(cabRequest *CabRequest, caeaReq *CaeaRegRequest) (string, string, error) {
+	feCAEACabRequest := FECAEACabRequest{
+		FECabRequest: &FECabRequest{
+			CantReg:  1,
+			PtoVta:   cabRequest.PtoVta,
+			CbteTipo: cabRequest.CbteTipo,
+		},
+	}
+
+	ivas := make([]*AlicIva, 0)
+	for _, iva := range caeaReq.IvasArray {
+		alicIva := AlicIva{
+			Id:      iva.ID,
+			BaseImp: iva.BaseImp,
+			Importe: iva.Importe,
+		}
+		ivas = append(ivas, &alicIva)
+	}
+
+	arrayOfAlicIvas := ArrayOfAlicIva{
+		AlicIva: ivas,
+	}
+
+	feDetRequest := FEDetRequest{
+		Concepto:               1,
+		DocTipo:                caeaReq.DocTipo,
+		DocNro:                 caeaReq.DocNro,
+		CbteDesde:              caeaReq.CbteDesde,
+		CbteHasta:              caeaReq.CbteHasta,
+		CbteFch:                caeaReq.CbteFch,
+		ImpTotal:               caeaReq.ImpTotal,
+		ImpTotConc:             caeaReq.ImpTotConc,
+		ImpNeto:                caeaReq.ImpNeto,
+		ImpOpEx:                caeaReq.ImpOpEx,
+		ImpTrib:                caeaReq.ImpTrib,
+		ImpIVA:                 caeaReq.ImpIVA,
+		MonId:                  "PES",
+		CanMisMonExt:           "N",
+		CondicionIVAReceptorId: caeaReq.CondicionIVAReceptorId,
+		MonCotiz:               1,
+	}
+
+	if cabRequest.CbteTipo != 11 &&
+		(caeaReq.ImpIVA > 0 || caeaReq.ImpNeto > 0) {
+		feDetRequest.Iva = &arrayOfAlicIvas
+	}
+
+	if caeaReq.CbteNroRef > 0 && caeaReq.CbteTipoRef > 0 {
+		cuit := ""
+		if caeaReq.DocNro > 0 {
+			docStr := strconv.FormatInt(caeaReq.DocNro, 10)
+			if len(docStr) == 11 {
+				cuit = docStr
+			}
+		}
+		cbteAsoc := CbteAsoc{
+			Tipo:    caeaReq.CbteTipoRef,
+			PtoVta:  cabRequest.PtoVta,
+			Nro:     caeaReq.CbteNroRef,
+			Cuit:    cuit,
+			CbteFch: caeaReq.CbteFch,
+		}
+		arrayOfCbteAsoc := ArrayOfCbteAsoc{
+			CbteAsoc: []*CbteAsoc{&cbteAsoc},
+		}
+		feDetRequest.CbtesAsoc = &arrayOfCbteAsoc
+	}
+
+	tributos := make([]*Tributo, 0)
+	for _, tributo := range caeaReq.TributosArray {
+		t := Tributo{
+			Id:      tributo.ID,
+			BaseImp: tributo.BaseImp,
+			Desc:    tributo.Desc,
+			Alic:    tributo.Alic,
+			Importe: tributo.Importe,
+		}
+		tributos = append(tributos, &t)
+	}
+	if len(tributos) > 0 {
+		feDetRequest.Tributos = &ArrayOfTributo{Tributo: tributos}
+	}
+
+	feCAEADetRequest := FECAEADetRequest{
+		FEDetRequest: &feDetRequest,
+		CAEA:         caeaReq.CAEA,
+		CbteFchHsGen: caeaReq.CbteFchHsGen,
+	}
+
+	feCAEARequest := FECAEARequest{
+		FeCabReq: &feCAEACabRequest,
+		FeDetReq: &ArrayOfFECAEADetRequest{
+			FECAEADetRequest: []*FECAEADetRequest{&feCAEADetRequest},
+		},
+	}
+
+	feCAEARegInformativo := FECAEARegInformativo{
+		Auth:            s.getAuth(cabRequest.Cuit),
+		FeCAEARegInfReq: &feCAEARequest,
+	}
+
+	resp, err := s.serviceSoap.FECAEARegInformativo(&feCAEARegInformativo)
+	if err != nil {
+		return "", "", err
+	}
+
+	result := resp.FECAEARegInformativoResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return "", "", fmt.Errorf(result.Errors.Err[0].Msg)
+	}
+
+	detResp := result.FeDetResp
+	if detResp == nil || len(detResp.FECAEADetResponse) == 0 {
+		return "", "", fmt.Errorf("respuesta vacía de FECAEARegInformativo")
+	}
+
+	det := detResp.FECAEADetResponse[0]
+	if det.Observaciones != nil && len(det.Observaciones.Obs) > 0 {
+		return det.CAEA, "", fmt.Errorf(det.Observaciones.Obs[0].Msg)
+	}
+
+	return det.CAEA, det.CbteFch, nil
+}
+
+// CaeaSinMovimientoInformar informa un punto de venta sin movimientos para un CAEA.
+// Retorna el resultado ("A" aprobado / "R" rechazado).
+func (s *Service) CaeaSinMovimientoInformar(req *CaeaSinMovRequest) (string, error) {
+	feCAEASinMovInformar := FECAEASinMovimientoInformar{
+		Auth:   s.getAuth(req.Cuit),
+		PtoVta: req.PtoVta,
+		CAEA:   req.CAEA,
+	}
+
+	resp, err := s.serviceSoap.FECAEASinMovimientoInformar(&feCAEASinMovInformar)
+	if err != nil {
+		return "", err
+	}
+
+	result := resp.FECAEASinMovimientoInformarResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return "", fmt.Errorf(result.Errors.Err[0].Msg)
+	}
+
+	return result.Resultado, nil
+}
+
+// CaeaSinMovimientoConsultar consulta los puntos de venta informados sin movimientos para un CAEA.
+// Retorna el listado de registros sin movimiento.
+func (s *Service) CaeaSinMovimientoConsultar(req *CaeaSinMovRequest) ([]*FECAEASinMov, error) {
+	feCAEASinMovConsultar := FECAEASinMovimientoConsultar{
+		Auth:   s.getAuth(req.Cuit),
+		CAEA:   req.CAEA,
+		PtoVta: req.PtoVta,
+	}
+
+	resp, err := s.serviceSoap.FECAEASinMovimientoConsultar(&feCAEASinMovConsultar)
+	if err != nil {
+		return nil, err
+	}
+
+	result := resp.FECAEASinMovimientoConsultarResult
+	if result.Errors != nil && len(result.Errors.Err) > 0 {
+		return nil, fmt.Errorf(result.Errors.Err[0].Msg)
+	}
+
+	if result.ResultGet == nil {
+		return []*FECAEASinMov{}, nil
+	}
+
+	return result.ResultGet.FECAEASinMov, nil
+}
+
