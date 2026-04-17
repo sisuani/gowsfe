@@ -153,6 +153,148 @@ func CaeRequest(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
 	return C.CString(cae), C.CString(caeFchVto)
 }
 
+// CaeaSolicitar solicita un CAEA para el periodo y orden indicados.
+// Parámetro: JSON {"cuit":..., "periodo":..., "orden":...}
+// Retorno: JSON con los datos del CAEA (CAEA, Periodo, Orden, FchVigDesde, FchVigHasta, FchTopeInf, FchProceso)
+
+//export CaeaSolicitar
+func CaeaSolicitar(reqCchar *C.char) *C.char {
+	lastError = ""
+	requestStr := C.GoString(reqCchar)
+
+	writeToLog("CaeaSolicitar()")
+	writeToLog(fmt.Sprintf("  |_ Request: %s", requestStr))
+
+	req := wsfe.CaeaRequest{}
+	if err := json.Unmarshal([]byte(requestStr), &req); err != nil {
+		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ error: %s", lastError))
+		return C.CString("")
+	}
+
+	resultado, err := wsfeService.CaeaSolicitar(&req)
+	if err != nil {
+		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ error: %s", lastError))
+		return C.CString("")
+	}
+
+	writeToLog(fmt.Sprintf("  |_ Resultado: %v", resultado))
+
+	js, err := json.Marshal(resultado)
+	if err != nil {
+		lastError = err.Error()
+		writeToLog(fmt.Sprintf("  |_ error: %s", lastError))
+		return C.CString("")
+	}
+	writeToLog(fmt.Sprintf("  |_ Resultado: %s", string(js)))
+	return C.CString(string(js))
+}
+
+// CaeaConsultar consulta un CAEA ya emitido para el periodo y orden indicados.
+// Parámetro: JSON {"cuit":..., "periodo":..., "orden":...}
+// Retorno: JSON con los datos del CAEA
+
+//export CaeaConsultar
+func CaeaConsultar(reqCchar *C.char) *C.char {
+	lastError = ""
+	req := wsfe.CaeaRequest{}
+	if err := json.Unmarshal([]byte(C.GoString(reqCchar)), &req); err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+
+	resultado, err := wsfeService.CaeaConsultar(&req)
+	if err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+
+	js, err := json.Marshal(resultado)
+	if err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+	return C.CString(string(js))
+}
+
+// CaeaRegInformativo informa comprobantes asociados a un CAEA (rendición informativa).
+// Parámetros:
+//   cabJSON: {"cuit":..., "ptoVta":..., "cbteTipo":...}
+//   detJSON: igual que CaeRequest con campos adicionales "caea" y "cbteFchHsGen"
+// Retorno: (caea, cbteFch)
+
+//export CaeaRegInformativo
+func CaeaRegInformativo(cabRequestCchar, detRequestCchar *C.char) (*C.char, *C.char) {
+	lastError = ""
+
+	cabRequest := wsfe.CabRequest{}
+	if err := json.Unmarshal([]byte(C.GoString(cabRequestCchar)), &cabRequest); err != nil {
+		lastError = err.Error()
+		return C.CString(""), C.CString("")
+	}
+
+	caeaReq := wsfe.CaeaRegRequest{}
+	if err := json.Unmarshal([]byte(C.GoString(detRequestCchar)), &caeaReq); err != nil {
+		lastError = err.Error()
+		return C.CString(""), C.CString("")
+	}
+
+	caea, cbteFch, err := wsfeService.CaeaRegInformativo(&cabRequest, &caeaReq)
+	if err != nil {
+		lastError = err.Error()
+	}
+	return C.CString(caea), C.CString(cbteFch)
+}
+
+// CaeaSinMovimientoInformar informa un punto de venta sin movimientos para un CAEA.
+// Parámetro: JSON {"cuit":..., "ptoVta":..., "caea":...}
+// Retorno: resultado ("A" aprobado / "R" rechazado)
+
+//export CaeaSinMovimientoInformar
+func CaeaSinMovimientoInformar(reqCchar *C.char) *C.char {
+	lastError = ""
+	req := wsfe.CaeaSinMovRequest{}
+	if err := json.Unmarshal([]byte(C.GoString(reqCchar)), &req); err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+
+	resultado, err := wsfeService.CaeaSinMovimientoInformar(&req)
+	if err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+	return C.CString(resultado)
+}
+
+// CaeaSinMovimientoConsultar consulta los puntos de venta sin movimientos para un CAEA.
+// Parámetro: JSON {"cuit":..., "caea":..., "ptoVta":...}
+// Retorno: JSON array [{CAEA, PtoVta, FchProceso}, ...]
+
+//export CaeaSinMovimientoConsultar
+func CaeaSinMovimientoConsultar(reqCchar *C.char) *C.char {
+	lastError = ""
+	req := wsfe.CaeaSinMovRequest{}
+	if err := json.Unmarshal([]byte(C.GoString(reqCchar)), &req); err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+
+	lista, err := wsfeService.CaeaSinMovimientoConsultar(&req)
+	if err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+
+	js, err := json.Marshal(lista)
+	if err != nil {
+		lastError = err.Error()
+		return C.CString("")
+	}
+	return C.CString(string(js))
+}
+
 //export LastError
 func LastError() *C.char {
 	return C.CString(lastError)
