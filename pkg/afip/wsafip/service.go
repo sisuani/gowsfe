@@ -11,6 +11,8 @@ import (
 	"github.com/hooklift/gowsdl/soap"
 )
 
+const RequestTimeout = 60 * time.Second
+
 // URLWSAATesting ... wsdl de wsaa en environment de homolagación de afip
 const URLWSAATesting string = "https://wsaahomo.afip.gov.ar/ws/services/LoginCms?WSDL"
 
@@ -136,7 +138,7 @@ func (s *Service) GetLoginTicket(serviceName string) (token string, sign string,
 		cmsBase64 := base64.StdEncoding.EncodeToString(cms)
 
 		// Armo conexión SOAP y solicitud
-		soapClient := soap.NewClient(s.urlWsaa)
+		soapClient := soap.NewClient(s.urlWsaa, soap.WithTimeout(RequestTimeout), soap.WithRequestTimeout(RequestTimeout))
 		login := NewLoginCMS(soapClient)
 
 		request := LoginCms{In0: cmsBase64}

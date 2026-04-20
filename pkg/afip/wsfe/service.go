@@ -92,7 +92,7 @@ func NewService(environment Environment, token, sign string) *Service {
 		url = URLWSAATesting
 	}
 
-	soapClient := soap.NewClient(url, soap.WithRequestTimeout(RequestTimeout))
+	soapClient := soap.NewClient(url, soap.WithTimeout(RequestTimeout), soap.WithRequestTimeout(RequestTimeout))
 	serviceSoap := NewServiceSoap(soapClient)
 
 	return &Service{environment: environment, serviceSoap: serviceSoap, token: token, sign: sign}
